@@ -16,5 +16,4 @@ docker run \
   -v "$SRC_HOST":"$SRC_CONTAINER":rw \
   -v "$ASSETS_HOST":"$ASSETS_CONTAINER":rw \
   -e DISPLAY="$DISPLAY" \
-  --gpus all \
  rp2024/bullet
