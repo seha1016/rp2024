@@ -61,7 +61,7 @@ def create_heightmap(points, colors, resolution, bounds):
         resolution: [height, width] in pixels
         bounds: List of [min, max] pairs for x, y, z dimensions
     """
-    x_bounds, y_bounds, _ = bounds
+    x_bounds, y_bounds, z_bounds = bounds
     height, width = resolution
     
     # Calculate meter per pixel
@@ -69,7 +69,7 @@ def create_heightmap(points, colors, resolution, bounds):
     y_scale = (y_bounds[1] - y_bounds[0]) / height
     
     # Initialize heightmap arrays
-    heightmap = np.full((height, width), -np.inf)
+    heightmap = np.full((height, width), z_bounds[0])
     colormap = np.zeros((height, width, 3), dtype=np.uint8)
     
     # Convert points to grid coordinates
@@ -87,7 +87,6 @@ def create_heightmap(points, colors, resolution, bounds):
             if z > heightmap[y, x]:
                 heightmap[y, x] = z
                 colormap[y, x] = colors[i]
-    
     return heightmap, colormap
 
 @hydra.main(version_base=None, config_path="config", config_name="convert_dataset")
@@ -98,6 +97,10 @@ def main(cfg: DictConfig) -> None:
     # Get list of all scene files in the dataset directory
     scene_files = sorted([f for f in os.listdir(cfg.dataset_source_directory) 
                          if f.startswith('scene_') and f.endswith('.hdf5')])
+    
+    height_maps = []
+    colormaps = []
+    grasp_poses = []
 
     for scene_file in scene_files:
         file_path = os.path.join(cfg.dataset_source_directory, scene_file)
@@ -140,8 +143,26 @@ def main(cfg: DictConfig) -> None:
                 cv2.imshow('Colormap', colormap)
                 cv2.waitKey(0)
             
-            # Save results
-            store_orthographic_data(scene_file, heightmap, colormap, grasp_pose, cfg.workspace_bounds, cfg.dataset_target_directory)
+            height_maps.append(heightmap)
+            colormaps.append(colormap)
+            grasp_poses.append(grasp_pose)
+    
+    if cfg.store_dataset:   
+        # compute mean and std of all channels
+        mean_heightmap = np.mean(height_maps)
+        std_heightmap = np.std(height_maps)
+        mean_colormap = np.mean(colormaps)
+        std_colormap = np.std(colormaps)
+        image_stats = {
+            'mean_heightmap': mean_heightmap,
+            'std_heightmap': std_heightmap,
+            'mean_colormap': mean_colormap,
+            'std_colormap': std_colormap
+        }
+        for i, (heightmap, colormap, grasp_pose) in enumerate(zip(height_maps, colormaps, grasp_poses)):
+            standardized_heightmap = (heightmap - mean_heightmap) / std_heightmap
+            standardized_colormap = (colormap - mean_colormap) / std_colormap
+            store_orthographic_data(i, standardized_heightmap, standardized_colormap, grasp_pose, cfg.workspace_bounds, image_stats, cfg.dataset_target_directory)
 
 if __name__ == "__main__":
     main()

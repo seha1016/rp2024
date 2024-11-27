@@ -5,9 +5,9 @@ defaults:
   - camera_factory: static
   - _self_
 
-debug: false
-render: false
-store_dataset: true
+debug: true
+render: true
+store_dataset: false
 dataset_directory: ${data_root}/datasets/tn_train_data
 
-n_scenes: 10
+n_scenes: 100

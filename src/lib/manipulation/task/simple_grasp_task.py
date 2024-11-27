@@ -91,7 +91,7 @@ class GraspTaskFactory:
     def generate_grasp_object(self, object_type, added_objects):
         manipulation_object = self.grasp_object_factory.create_grasp_object(object_type)
         object_pose = self.get_non_overlapping_pose(manipulation_object.min_dist, added_objects)
-        corrected_pose =manipulation_object.offset @ object_pose.matrix
+        corrected_pose = manipulation_object.offset @ object_pose.matrix
         manipulation_object.pose = corrected_pose
         manipulation_object.unique_id = self.get_unique_id()
         return manipulation_object
